@@ -3,11 +3,11 @@
 // Company: SQD Lab
 // Engineer: Junjia Yang
 // 
-// Create Date: 02/09/2024 02:11:35 PM
+// Create Date: 02/09/2024 10:48:39 AM
 // Design Name: 
 // Module Name: trigger_FSM
-// Project Name: Repitition_trigger
-// Target Devices: Red-pitaya 125-10
+// Project Name: 
+// Target Devices: 
 // Tool Versions: 
 // Description: 
 // 
@@ -33,6 +33,7 @@ module trigger_FSM(
 
 reg [1:0] state;
 reg last_trig;
+reg [31:0] last_addr;
 reg [7:0] sample_cnt;
 reg [23:0] rep_cnt;
 
@@ -40,10 +41,11 @@ initial begin
 	$dumpfile("waves.vcd");
 	$dumpvars();
     state = 2'd0;
+    write_address = 32'hxxxxxxxx;
 end
 
 always @(posedge clk) begin
-    last_trig <= trig;    
+    last_trig <= trig;   
     case (state)
         2'b0:
             begin
@@ -61,7 +63,6 @@ always @(posedge clk) begin
                     state <= 2'b10;
                 else
                     state <= 2'b1;
-                write_address <= 32'hxxxxxxxx;
             end    
         2'b10: 
             begin
@@ -71,24 +72,26 @@ always @(posedge clk) begin
                     sample_cnt <= 8'd6;
                     data_out_A <= adc_A;
                     data_out_B <= adc_B;
-                    write_address <= 32'h40000000;
                     write_enable <= 1'b1;
+                    if (write_address > 32'h40000000) 
+                        write_address <= last_addr;
+                    else
+                        write_address <= 32'h40000000;               
                     end
                 else
                     begin
                     state <= 2'b10;
                     sample_cnt <= sample_cnt - 8'd1;
                     write_enable <= 1'b0;
-                    write_address <= 32'hxxxxxxxx;
                     end
             end
         2'b11:
             begin
+            last_addr <= write_address;
             if (sample_cnt == 8'd0)
                 begin
                 state <= 2'b1;
                 write_enable <= 1'b0;
-                write_address <= 32'hxxxxxxxx;
                 rep_cnt <= rep_cnt - 24'd1;
                 end
             else

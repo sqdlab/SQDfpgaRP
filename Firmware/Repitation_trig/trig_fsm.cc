@@ -43,7 +43,7 @@ int main(int argc, char ** argv) {
     else
       top->sniff_trig = 0;
 
-    if ((num_TCY > 11 && num_TCY < 13) || (num_TCY > 28 && num_TCY < 30) || (num_TCY > 50 && num_TCY < 52))
+    if ((num_TCY > 11 && num_TCY < 13) || (num_TCY > 28 && num_TCY < 30) || (num_TCY > 50 && num_TCY < 52) || (num_TCY > 70 && num_TCY < 72))
     {
       top->trig = 1;
       printf("It's working!");
