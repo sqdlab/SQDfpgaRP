@@ -28,6 +28,9 @@ set obj [get_filesets sources_1]
 set files [list \
  [file normalize "./sources/BRAM_Store.v"]\
  [file normalize "./sources/trigger_FSM.v"]\
+ [file normalize "./sources/axi_to_module.v"]\
+ [file normalize "./sources/cpu_trig.v"]\
+
 ]
 
 set imported_files ""
@@ -88,9 +91,9 @@ set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:
 
 # ----- axi_interconnect_0 -----
 set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
-set_property -dict [list \
-CONFIG.NUM_SI {2} \
-CONFIG.STRATEGY {1} \
+    set_property -dict [list \
+    CONFIG.NUM_SI {2} \
+    CONFIG.STRATEGY {1} \
 ] $axi_interconnect_0
 
 # ----- rst_ps7_0_50M -----
@@ -131,16 +134,48 @@ set_property CONFIG.DIN_WIDTH {8} $xlslice_0
 
 # ----- axi_gpio_1 -----
 set axi_gpio_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_1 ]
-set_property CONFIG.C_IS_DUAL {0} $axi_gpio_1
+    set_property -dict [list \
+    CONFIG.C_ALL_OUTPUTS {1} \
+    CONFIG.C_IS_DUAL {0} \
+] $axi_gpio_1
 
 # ----- xlconstant_0 -----
 set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+
+# ----- axi_to_modules_0 -----
+set block_name axi_to_modules
+set block_cell_name axi_to_modules_0
+if { [catch {set axi_to_modules_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+    catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+    return 1
+} elseif { $axi_to_modules_0 eq "" } {
+    catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+    return 1
+}
+
+# ----- cpu_trig_0 -----
+set block_name cpu_trig
+set block_cell_name cpu_trig_0
+if { [catch {set cpu_trig_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+    catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+    return 1
+} elseif { $cpu_trig_0 eq "" } {
+    catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+    return 1
+}
+
+# ----- xlslice_1 -----
+set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
+set_property -dict [list \
+CONFIG.DIN_FROM {31} \
+CONFIG.DIN_TO {31} \
+] $xlslice_1
 
 # ====================================================================================
 # Connections
 
 # Create interface connections
-connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA] [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA]
+connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
 connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
 connect_bd_intf_net -intf_net axi_interconnect_0_M01_AXI [get_bd_intf_pins axi_interconnect_0/M01_AXI] [get_bd_intf_pins axi_gpio_1/S_AXI]
 connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins processing_system7_0/DDR]
@@ -154,17 +189,20 @@ connect_bd_net -net BRAM_Store_0_BRAM_write_address [get_bd_pins BRAM_Store_0/BR
 connect_bd_net -net BRAM_Store_0_BRAM_write_data [get_bd_pins BRAM_Store_0/BRAM_write_data] [get_bd_pins blk_mem_gen_0/dinb]
 connect_bd_net -net adc_dat_a_in_1 [get_bd_ports adc_dat_a_in] [get_bd_pins trigger_FSM_0/adc_A]
 connect_bd_net -net adc_dat_b_in_1 [get_bd_ports adc_dat_b_in] [get_bd_pins trigger_FSM_0/adc_B]
-connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins axi_gpio_1/gpio_io_i]
+connect_bd_net -net axi_gpio_1_gpio_io_o [get_bd_pins axi_gpio_1/gpio_io_o] [get_bd_pins xlslice_1/Din] [get_bd_pins axi_to_modules_0/control_bus]
+connect_bd_net -net axi_to_modules_0_write_finished [get_bd_pins axi_to_modules_0/write_finished] [get_bd_pins cpu_trig_0/write_finished]
+connect_bd_net -net cpu_trig_0_cpu_flag [get_bd_pins cpu_trig_0/cpu_flag] [get_bd_pins trigger_FSM_0/sniff_trig]
 connect_bd_net -net exp_p_tri_io_1 [get_bd_ports exp_p_tri_io] [get_bd_pins xlslice_0/Din]
-connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins axi_gpio_1/s_axi_aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins rst_ps7_0_50M/slowest_sync_clk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins trigger_FSM_0/clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK]
+connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins axi_gpio_1/s_axi_aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins rst_ps7_0_50M/slowest_sync_clk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axi_to_modules_0/clk] [get_bd_pins cpu_trig_0/clk] [get_bd_pins trigger_FSM_0/clk]
 connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins rst_ps7_0_50M/ext_reset_in]
-connect_bd_net -net rst_ps7_0_50M_peripheral_aresetn [get_bd_pins rst_ps7_0_50M/peripheral_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins axi_gpio_1/s_axi_aresetn] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN]
+connect_bd_net -net rst_ps7_0_50M_peripheral_aresetn [get_bd_pins rst_ps7_0_50M/peripheral_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins axi_gpio_1/s_axi_aresetn] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_to_modules_0/rst_active_low]
 connect_bd_net -net trigger_FSM_0_data_out_A [get_bd_pins trigger_FSM_0/data_out_A] [get_bd_pins BRAM_Store_0/data_out_A]
 connect_bd_net -net trigger_FSM_0_data_out_B [get_bd_pins trigger_FSM_0/data_out_B] [get_bd_pins BRAM_Store_0/data_out_B]
 connect_bd_net -net trigger_FSM_0_write_address [get_bd_pins trigger_FSM_0/write_address] [get_bd_pins BRAM_Store_0/write_address]
 connect_bd_net -net trigger_FSM_0_write_enable [get_bd_pins trigger_FSM_0/write_enable] [get_bd_pins BRAM_Store_0/write_enable]
 connect_bd_net -net xlconstant_0_dout [get_bd_pins xlconstant_0/dout] [get_bd_pins blk_mem_gen_0/enb]
 connect_bd_net -net xlslice_0_Dout [get_bd_pins xlslice_0/Dout] [get_bd_ports led_o] [get_bd_pins trigger_FSM_0/trig]
+connect_bd_net -net xlslice_1_Dout [get_bd_pins xlslice_1/Dout] [get_bd_pins cpu_trig_0/CPU_trig]
 
 # Create address segments
 assign_bd_address -offset 0x40000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_bram_ctrl_0/S_AXI/Mem0] -force
