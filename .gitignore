@@ -1,2 +1,4 @@
 /Firmware/tmp
 /Firmware/.Xil
+/Firmware/cpu_trig/sim/build
+/Firmware/Repetition_trig/sim/build
