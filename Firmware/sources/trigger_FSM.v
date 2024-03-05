@@ -26,8 +26,8 @@ module trigger_FSM(
     input [13:0] adc_B,
     input trig,
     input sniff_trig,
-    input [24:0] max_sample_cnt, //NOTE: Number of Samples = sample_cnt + 1...
-    input [24:0] max_repetition_cnt,
+    input [23:0] max_sample_cnt, //NOTE: Number of Samples = sample_cnt + 1...
+    input [23:0] max_repetition_cnt,
 
     output reg [13:0] data_out_A,
     output reg [13:0] data_out_B,
@@ -36,16 +36,16 @@ module trigger_FSM(
 
 reg [1:0] state;
 reg last_trig;
-reg [24:0] sample_cnt;
-reg [24:0] rep_cnt;
+reg [23:0] sample_cnt;
+reg [23:0] rep_cnt;
 
 initial begin
 	$dumpfile("waves.vcd");
 	$dumpvars();
     state = 2'd0;
     write_address = 32'hxxxxxxxx;
-    sample_cnt = 25'd0;
-    rep_cnt = 25'd0;
+    sample_cnt = 24'd0;
+    rep_cnt = 24'd0;
 end
 
 always @(posedge clk) begin
@@ -53,7 +53,7 @@ always @(posedge clk) begin
     case (state)
         2'b0://Idle
             begin
-                rep_cnt <= 25'd3;
+                rep_cnt <= max_repetition_cnt;
                 if (sniff_trig == 1)
                 begin
                     state <=  2'b1;
@@ -68,7 +68,7 @@ always @(posedge clk) begin
             end
         2'b1://Wait for trigger
             begin
-                sample_cnt <= 25'd5;    //Wait 6 TCY to sync with ADC delay...
+                sample_cnt <= 24'd5;    //Wait 6 TCY to sync with ADC delay...
                 write_enable <= 1'b0;
                 if (rep_cnt == 0)
                     state <= 2'b0;
@@ -79,10 +79,10 @@ always @(posedge clk) begin
             end
         2'b10:
             begin//Begin sampling after waiting for the initial 6 ticks
-                if (sample_cnt == 25'd0)
+                if (sample_cnt == 24'd0)
                     begin
                     state <= 2'b11; //modified
-                    sample_cnt <= 25'd100;
+                    sample_cnt <= max_sample_cnt;
                     data_out_A <= adc_A;
                     data_out_B <= adc_B;
                     write_enable <= 1'b1;
@@ -91,22 +91,22 @@ always @(posedge clk) begin
                 else
                     begin
                     state <= 2'b10;
-                    sample_cnt <= sample_cnt - 25'd1;
+                    sample_cnt <= sample_cnt - 24'd1;
                     write_enable <= 1'b0;
                     end
             end
         2'b11:
             begin//Finish sampling
-            if (sample_cnt == 25'd0)
+            if (sample_cnt == 24'd0)
                 begin
                 state <= 2'b1;
                 write_enable <= 1'b0;
-                rep_cnt <= rep_cnt - 25'd1;
+                rep_cnt <= rep_cnt - 24'd1;
                 end
             else
                 begin
                 state <= 2'b11;
-                sample_cnt <= sample_cnt - 25'd1;
+                sample_cnt <= sample_cnt - 24'd1;
                 write_enable <= 1'b1;
                 write_address <= write_address + 32'd4;
                 end
