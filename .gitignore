@@ -2,3 +2,4 @@
 /Firmware/.Xil
 /Firmware/cpu_trig/sim/build
 /Firmware/Repetition_trig/sim/build
+/Firmware/Controller_FSM/sim/build
