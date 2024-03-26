@@ -27,9 +27,10 @@ set obj [get_filesets sources_1]
 # Import local files from the original project
 set files [list \
  [file normalize "./sources/BRAM_Store.v"]\
- [file normalize "./sources/trigger_FSM.v"]\
- [file normalize "./sources/cpu_trig.v"]\
- [file normalize "./sources/controller.v"]\
+ [file normalize "./Repetition_trig/TRIGFSM.v"]\
+ [file normalize "./cpu_trig/TRIGFSM.v"]\
+ [file normalize "./Controller_FSM/TRIGFSM.v"]\
+ [file normalize "./Sin_cos_gen/sin_cos_gen.v"]\
 ]
 
 set imported_files ""

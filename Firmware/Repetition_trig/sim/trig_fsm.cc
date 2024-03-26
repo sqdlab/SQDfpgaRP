@@ -35,6 +35,9 @@ int main(int argc, char ** argv) {
     top->eval(); 
 
     num_TCY++;
+
+    top->max_sample_cnt = 10;
+    top->max_repetition_cnt = 2;
     
     if (num_TCY == 24 || num_TCY == 115)
       top->sniff_trig = 1;

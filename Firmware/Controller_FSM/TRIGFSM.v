@@ -20,13 +20,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module controller_FSM(
+module controller(
     input clk,
     input [31:0] data_input,
     output reg cpu_trig,
     output reg [23:0] repetitions,
     output reg [23:0] samples,
-    output reg [23:0] generator_hops);
+    output reg [23:0] generator_hops,
+    output reg [7:0] led_o
+);
 
 reg state;
 reg prev_new_data_flag;
@@ -40,10 +42,12 @@ initial begin
     repetitions = 24'd0;
     samples = 24'd0;
     generator_hops = 24'd0;
+    led_o = 8'b0;
 end
 
 always @(posedge clk) begin
     prev_new_data_flag <= data_input[31];
+    led_o[7] <= data_input[31];
     case (state)
         1'b0://Idle
             begin 
@@ -58,31 +62,37 @@ always @(posedge clk) begin
                 if (data_input[30:25] == 0 && data_input[24] == 1) // data address is 0 and cpu ctrl bit is 1
                     begin
                     cpu_trig <= 1;
+                    led_o[6:0] <= {1'b1, 6'b0};
                     state <= 1'b0;
                     end
-                else if (data_input[30:25] == 6'b111111 && data_input[24] == 0) // data address refer to repetition
+                else if (data_input[30:25] == 6'b111111) // data address refer to repetition
                     begin
                     cpu_trig <= 0;
                     repetitions <= data_input[23:0];
+                    led_o[6:0] <= {1'b0, data_input[5:0]};
                     state <= 1'b0;
                     end
-                else if (data_input[30:25] == 6'b111110 && data_input[24] == 0) // data address refer to sample num
+                else if (data_input[30:25] == 6'b111110) // data address refer to sample num
                     begin
                     cpu_trig <= 0;
                     samples <= data_input[23:0];
+                    led_o[6:0] <= {1'b0, data_input[5:0]};
                     state <= 1'b0;
                     end
-                else if (data_input[30:25] == 6'b111101 && data_input[24] == 0) // data address refer to hops
+                else if (data_input[30:25] == 6'b111101) // data address refer to hops
                     begin
                     cpu_trig <= 0; 
                     generator_hops <= data_input[23:0];
+                    led_o[6:0] <= {1'b0, data_input[5:0]};
                     state <= 1'b0;
                     end
-                else //reset to idle state if the input is not valid
+                else //reset 8to idle state if the input is not valid
                     begin
-                    state <= 1'b0; 
+                    state <= 1'b0;
+                    led_o[6:0] <= 7'b0;
                     end
             end
     endcase
 end
 endmodule
+

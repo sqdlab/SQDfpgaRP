@@ -20,8 +20,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module sine_and_cosine_generator #(
-    parameter OUTPUT_WIDTH = 16
+module sin_cos_gen #(
+    parameter OUTPUT_WIDTH = 16,
+    parameter lut_path = "../../values.hex"
 ) (
     input gen_clk,
     input [5:0] hop_amount,
@@ -33,11 +34,10 @@ module sine_and_cosine_generator #(
 reg [5:0] sine_phase = 6'd0;
 reg [5:0] cosine_phase = 6'd17;
 reg [OUTPUT_WIDTH-1:0] trig_table [0:63];
-
 initial	begin
 	$dumpfile("waves.vcd");
     $dumpvars();
-	$readmemh("../values.hex", trig_table);
+	$readmemh(lut_path, trig_table);
 end
 
 always @(posedge gen_clk) begin
