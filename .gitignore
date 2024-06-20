@@ -1,7 +1,5 @@
 /Firmware/tmp
 /Firmware/.Xil
-/Firmware/cpu_trig/sim/build
-/Firmware/Repetition_trig/sim/build
-/Firmware/Controller_FSM/sim/build
-/Firmware/Sin_cos_gen/sim/build
 /Firmware/backup_verilog
+**/build
+**/build_1

@@ -23,21 +23,21 @@
 module trigger_FSM(
     input clk,
     input [13:0] adc_A, //the bus width of adc is 14
-    input [13:0] adc_B,
     input trig,
     input sniff_trig,
     input [23:0] max_sample_cnt, //NOTE: Number of Samples = sample_cnt + 1...
     input [23:0] max_repetition_cnt,
 
     output reg [13:0] data_out_A,
-    output reg [13:0] data_out_B,
     output reg write_enable,
-    output reg [31:0] write_address);
+    output [7:0] led
+);
 
 reg [1:0] state;
 reg last_trig;
 reg [23:0] sample_cnt;
 reg [23:0] rep_cnt;
+
 
 initial begin
 	$dumpfile("waves.vcd");
@@ -45,7 +45,10 @@ initial begin
     state = 2'd0;
     sample_cnt = 24'd0;
     rep_cnt = 24'd0;
+    data_out_A = 14'd0;
+    write_enable = 1'd0;
 end
+assign led[1:0] = state; 
 
 always @(posedge clk) begin
     last_trig <= trig;
@@ -56,12 +59,10 @@ always @(posedge clk) begin
                 if (sniff_trig == 1)
                 begin
                     state <=  2'b1;
-                    write_address <= 32'h00000000 - 32'd4;
                 end
                 else
                 begin
                     state <= 2'b0;
-                    write_address <= 32'h00000000;
                 end
                 write_enable <= 1'b0;
             end
@@ -83,9 +84,7 @@ always @(posedge clk) begin
                     state <= 2'b11; //modified
                     sample_cnt <= max_sample_cnt;
                     data_out_A <= adc_A;
-                    data_out_B <= adc_B;
                     write_enable <= 1'b1;
-                    write_address <= write_address + 32'h00000004;
                     end
                 else
                     begin
@@ -107,7 +106,6 @@ always @(posedge clk) begin
                 state <= 2'b11;
                 sample_cnt <= sample_cnt - 24'd1;
                 write_enable <= 1'b1;
-                write_address <= write_address + 32'd4;
                 end
             data_out_A <= adc_A;
             end

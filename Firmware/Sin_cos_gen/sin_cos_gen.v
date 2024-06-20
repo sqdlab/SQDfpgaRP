@@ -22,7 +22,7 @@
 
 module sin_cos_gen #(
     parameter OUTPUT_WIDTH = 16,
-    parameter lut_path = "../../values.hex"
+    parameter lut_path = "values.hex"
 ) (
     input gen_clk,
     input [5:0] hop_amount,
@@ -38,6 +38,8 @@ initial	begin
 	$dumpfile("waves.vcd");
     $dumpvars();
 	$readmemh(lut_path, trig_table);
+	sine_value = trig_table[sine_phase];
+	cosine_value = trig_table[cosine_phase];
 end
 
 always @(posedge gen_clk) begin
