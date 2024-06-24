@@ -3,3 +3,5 @@
 /Firmware/backup_verilog
 **/build
 **/build_1
+**/tmp
+**/results
